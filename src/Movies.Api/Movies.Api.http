@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:5080
+
+### Search by title (case- and accent-insensitive)
+GET {{baseUrl}}/api/movies?search=pokemon
+
+### Limit results and page through them
+GET {{baseUrl}}/api/movies?search=spider&page=1&pageSize=5
+
+### Page through every movie
+GET {{baseUrl}}/api/movies?page=2&pageSize=50
+
+### Single movie
+GET {{baseUrl}}/api/movies/1
+
+### Validation error (pageSize out of range)
+GET {{baseUrl}}/api/movies?pageSize=500
+
+### Health
+GET {{baseUrl}}/health

@@ -1,0 +1,11 @@
+services:
+  movies-api:
+    build: .
+    image: movies-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Expose the OpenAPI document and Scalar UI so reviewers can explore the API.
+      OpenApi__Enabled: "true"
+    restart: unless-stopped

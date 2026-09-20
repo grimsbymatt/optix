@@ -1,0 +1,5 @@
+* text=auto
+
+# Keep the dataset byte-for-byte as supplied (it contains stray carriage returns
+# inside unquoted fields, so line-ending conversion must not touch it).
+*.csv -text

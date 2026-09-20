@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Movies.Api/Movies.Api.csproj" />
+    <Project Path="src/Movies.Core/Movies.Core.csproj" />
+    <Project Path="src/Movies.Infrastructure/Movies.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Movies.Api.Tests/Movies.Api.Tests.csproj" />
+    <Project Path="tests/Movies.Infrastructure.Tests/Movies.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="Dockerfile" />
+    <File Path="docker-compose.yml" />
+    <File Path="README.md" />
+  </Folder>
+</Solution>
