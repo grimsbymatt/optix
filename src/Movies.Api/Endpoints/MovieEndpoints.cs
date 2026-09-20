@@ -11,10 +11,10 @@ public static class MovieEndpoints
 
         group.MapGet("/", SearchMoviesAsync)
             .WithName("SearchMovies")
-            .WithSummary("Search movies by title")
+            .WithSummary("Search, filter, sort and page through movies")
             .WithDescription(
-                "Case- and accent-insensitive 'contains' search on the movie title. " +
-                "Results are ordered by title and paged; omit 'search' to page through all movies.");
+                "Case- and accent-insensitive 'contains' search on the movie title, optionally filtered by genre. " +
+                "Results are sorted by title (default) or release date and paged; omit 'search' to page through all movies.");
 
         group.MapGet("/{id:int}", GetMovieByIdAsync)
             .WithName("GetMovieById")

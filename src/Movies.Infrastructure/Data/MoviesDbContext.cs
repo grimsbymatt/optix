@@ -27,7 +27,8 @@ public sealed class MoviesDbContext(DbContextOptions<MoviesDbContext> options) :
 
         modelBuilder.Entity<Genre>(genre =>
         {
-            genre.Property(g => g.Name).HasMaxLength(50);
+            // NOCASE makes the genre filter and the unique index case-insensitive (genre names are ASCII).
+            genre.Property(g => g.Name).HasMaxLength(50).UseCollation("NOCASE");
             genre.HasIndex(g => g.Name).IsUnique();
         });
     }

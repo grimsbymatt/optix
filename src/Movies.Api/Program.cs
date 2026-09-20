@@ -27,6 +27,7 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("OpenApi
 
 app.MapHealthChecks("/health");
 app.MapMovieEndpoints();
+app.MapGenreEndpoints();
 
 // Build and seed the in-memory database before accepting requests.
 await app.Services.InitializeMoviesDatabaseAsync();

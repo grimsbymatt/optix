@@ -9,11 +9,23 @@ GET {{baseUrl}}/api/movies?search=spider&page=1&pageSize=5
 ### Page through every movie
 GET {{baseUrl}}/api/movies?page=2&pageSize=50
 
+### Filter by genre (case-insensitive)
+GET {{baseUrl}}/api/movies?genre=science%20fiction
+
+### Sort by release date, newest first
+GET {{baseUrl}}/api/movies?sortBy=releaseDate&sortDirection=desc
+
+### Everything combined
+GET {{baseUrl}}/api/movies?search=star&genre=action&sortBy=releaseDate&sortDirection=desc&page=1&pageSize=10
+
+### List genres (with movie counts)
+GET {{baseUrl}}/api/genres
+
 ### Single movie
 GET {{baseUrl}}/api/movies/1
 
-### Validation error (pageSize out of range)
-GET {{baseUrl}}/api/movies?pageSize=500
+### Validation errors (pageSize out of range, unknown sort field)
+GET {{baseUrl}}/api/movies?pageSize=500&sortBy=rating
 
 ### Health
 GET {{baseUrl}}/health

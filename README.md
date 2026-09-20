@@ -11,11 +11,13 @@ Built for the Optix technical test.
 | Search movies by title | ✅ | `GET /api/movies?search=spider` (case- and accent-insensitive "contains") |
 | Limit the number of results | ✅ | `pageSize` (1–100, default 20) |
 | Page through the list | ✅ | `page` (1-based) with `totalCount`, `totalPages`, `hasNextPage`, `hasPreviousPage` |
-| Filter by genre | ⏳ Next | Genres are already imported into their own tables |
+| Filter by genre | ✅ | `genre=Science Fiction` (exact name, case-insensitive). `GET /api/genres` lists the valid names |
 | Filter by actor | ❓ | The dataset has no cast data (see [Notes](#notes-on-the-dataset)) |
-| Sort by title / release date | ⏳ Next | |
+| Sort by title / release date | ✅ | `sortBy=title\|releaseDate`, `sortDirection=asc\|desc` |
 
-Also included: `GET /api/movies/{id}`, `GET /health`, OpenAPI document and Scalar API explorer.
+All the filters combine, and they're applied before paging, so `totalCount` and `totalPages` describe the filtered results.
+
+Also included: `GET /api/movies/{id}`, `GET /api/genres`, `GET /health`, OpenAPI document and Scalar API explorer.
 
 ## Running it
 
@@ -52,10 +54,18 @@ No Docker or external database is needed.
 | Parameter | Type | Default | Notes |
 |---|---|---|---|
 | `search` | string | – | Matches anywhere in the title. `pokemon` finds "Pokémon". Max 200 chars. |
+| `genre` | string | – | Only movies in this genre. Exact name, case-insensitive, e.g. `action` or `Science Fiction`. An unknown genre returns an empty page. |
+| `sortBy` | `title` \| `releaseDate` | `title` | Case-insensitive. |
+| `sortDirection` | `asc` \| `desc` | `asc` | Case-insensitive. `ascending` and `descending` are also accepted. |
 | `page` | int | 1 | 1-based. A page past the end returns an empty `items` list. |
 | `pageSize` | int | 20 | 1–100. |
 
-Results are ordered by title, then release date, then id, so paging is stable when titles repeat (for example remakes).
+Ties are broken in a fixed order so paging is stable when values repeat:
+
+- Sorting by title: then release date, then id (remakes share titles).
+- Sorting by release date: then title, then id (many films share a date).
+
+Example: `GET /api/movies?search=spider&genre=action&sortBy=releaseDate&sortDirection=desc&pageSize=5`
 
 ```json
 {
@@ -85,6 +95,18 @@ response that doesn't expose internal details.
 
 Returns the full movie, including overview, popularity, vote count and language. Returns `404` if the id doesn't exist.
 
+### `GET /api/genres`
+
+Every genre, ordered by name, with the number of movies in it. This lets a client (for example a UI dropdown) find the valid
+`genre` values.
+
+```json
+[
+  { "name": "Action", "movieCount": 2686 },
+  { "name": "Adventure", "movieCount": 1853 }
+]
+```
+
 ## Architecture
 
 ```
@@ -109,6 +131,10 @@ repositories or mediator layers wrapped around EF Core. `IMovieCatalog` is the s
   the migration path to PostgreSQL.
 - **Case- and accent-insensitive search.** A `SearchTitle` column holds a lower-cased, accent-stripped copy of each title, and
   search terms are normalised the same way. User input is escaped, so `100%` matches literally.
+- **Case-insensitive genre filter in the database.** `Genre.Name` uses SQLite's `NOCASE` collation, so `genre=action` matches
+  "Action" without normalising values in code. Genre names are all ASCII, so `NOCASE`'s ASCII-only case folding is enough.
+- **Sort options are parsed and validated, not bound as enums.** An invalid value such as `sortBy=rating` or `sortBy=1` returns a
+  clear 400 validation problem instead of being ignored or quietly mapped to an enum number.
 - **Offset paging.** This fits "page through the list" and a dataset of this size. Keyset paging would be the next step for very
   large tables.
 - **Tolerant import.** Invalid CSV rows are logged and skipped rather than stopping start-up.

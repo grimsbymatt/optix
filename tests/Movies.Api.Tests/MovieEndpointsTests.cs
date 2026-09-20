@@ -64,11 +64,66 @@ public sealed class MovieEndpointsTests(MoviesApiFactory factory) : IClassFixtur
         Assert.Equal(5, result.Items.Count);
     }
 
+    [Fact]
+    public async Task Genre_filter_returns_only_movies_in_that_genre()
+    {
+        var result = await GetPageAsync("/api/movies?genre=animation");
+
+        Assert.Equal(["100% Wolf", "Pokémon: The First Movie"], result.Items.Select(m => m.Title));
+        Assert.All(result.Items, m => Assert.Contains("Animation", m.Genres));
+    }
+
+    [Fact]
+    public async Task Genre_filter_accepts_multi_word_genres()
+    {
+        var result = await GetPageAsync("/api/movies?genre=Science%20Fiction");
+
+        Assert.Equal(2, result.TotalCount);
+    }
+
+    [Fact]
+    public async Task Unknown_genre_returns_an_empty_page()
+    {
+        var result = await GetPageAsync("/api/movies?genre=Western");
+
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.TotalCount);
+    }
+
+    [Theory]
+    [InlineData("/api/movies?sortBy=title&sortDirection=desc",
+        new[] { "The Batman", "Spider-Man: No Way Home", "Spider-Man", "Pokémon: The First Movie", "100% Wolf" })]
+    [InlineData("/api/movies?sortBy=releaseDate",
+        new[] { "Pokémon: The First Movie", "Spider-Man", "100% Wolf", "Spider-Man: No Way Home", "The Batman" })]
+    [InlineData("/api/movies?sortBy=RELEASEDATE&sortDirection=DESC",
+        new[] { "The Batman", "Spider-Man: No Way Home", "100% Wolf", "Spider-Man", "Pokémon: The First Movie" })]
+    public async Task Sorts_by_the_requested_field_and_direction(string url, string[] expectedTitles)
+    {
+        var result = await GetPageAsync(url);
+
+        Assert.Equal(expectedTitles, result.Items.Select(m => m.Title));
+    }
+
+    [Fact]
+    public async Task Search_genre_sort_and_paging_combine()
+    {
+        var result = await GetPageAsync(
+            "/api/movies?search=spider&genre=action&sortBy=releaseDate&sortDirection=desc&page=1&pageSize=1");
+
+        Assert.Equal("Spider-Man: No Way Home", Assert.Single(result.Items).Title);
+        Assert.Equal(2, result.TotalCount);
+        Assert.True(result.HasNextPage);
+    }
+
     [Theory]
     [InlineData("/api/movies?pageSize=0", "PageSize")]
     [InlineData("/api/movies?pageSize=101", "PageSize")]
     [InlineData("/api/movies?page=0", "Page")]
-    public async Task Invalid_paging_returns_a_validation_problem(string url, string expectedErrorKey)
+    [InlineData("/api/movies?sortBy=rating", "SortBy")]
+    [InlineData("/api/movies?sortBy=1", "SortBy")]
+    [InlineData("/api/movies?sortDirection=up", "SortDirection")]
+    [InlineData("/api/movies?genre=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "Genre")]
+    public async Task Invalid_query_parameters_return_a_validation_problem(string url, string expectedErrorKey)
     {
         var response = await _client.GetAsync(url, CancellationToken);
 
@@ -87,7 +142,7 @@ public sealed class MovieEndpointsTests(MoviesApiFactory factory) : IClassFixtur
 
         Assert.NotNull(movie);
         Assert.Equal("The Batman", movie.Title);
-        Assert.Equal(new[] { "Crime", "Mystery", "Thriller" }, movie.Genres);
+        Assert.Equal(["Crime", "Mystery", "Thriller"], movie.Genres);
     }
 
     [Fact]

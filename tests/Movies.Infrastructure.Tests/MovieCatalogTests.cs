@@ -29,12 +29,14 @@ public sealed class MovieCatalogTests : IDisposable
 
         var action = new Genre { Name = "Action" };
         var animation = new Genre { Name = "Animation" };
+        var comedy = new Genre { Name = "Comedy" };
+        var scienceFiction = new Genre { Name = "Science Fiction" };
 
         _dbContext.Movies.AddRange(
-            CreateMovie("Spider-Man: No Way Home", new DateOnly(2021, 12, 15), action),
-            CreateMovie("Spider-Man", new DateOnly(2002, 5, 1), action),
+            CreateMovie("Spider-Man: No Way Home", new DateOnly(2021, 12, 15), action, scienceFiction),
+            CreateMovie("Spider-Man", new DateOnly(2002, 5, 1), action, scienceFiction),
             CreateMovie("Pokémon: The First Movie", new DateOnly(1998, 7, 18), animation),
-            CreateMovie("100% Wolf", new DateOnly(2020, 5, 28), animation),
+            CreateMovie("100% Wolf", new DateOnly(2020, 5, 28), animation, comedy),
             CreateMovie("Shiny_Flakes: The Teenage Drug Lord", new DateOnly(2021, 8, 3)),
             CreateMovie("The Batman", new DateOnly(2022, 3, 1), action));
         _dbContext.SaveChanges();
@@ -65,7 +67,7 @@ public sealed class MovieCatalogTests : IDisposable
         var result = await SearchAsync(null, page: 1, pageSize: 10);
 
         Assert.Equal(
-            new[] { "100% Wolf", "Pokémon: The First Movie", "Shiny_Flakes: The Teenage Drug Lord", "Spider-Man", "Spider-Man: No Way Home", "The Batman" },
+            ["100% Wolf", "Pokémon: The First Movie", "Shiny_Flakes: The Teenage Drug Lord", "Spider-Man", "Spider-Man: No Way Home", "The Batman"],
             result.Items.Select(m => m.Title));
     }
 
@@ -77,7 +79,7 @@ public sealed class MovieCatalogTests : IDisposable
 
         Assert.Equal(4, page1.Items.Count);
         Assert.Equal(2, page2.Items.Count);
-        Assert.All(new[] { page1, page2 }, p => Assert.Equal(6, p.TotalCount));
+        Assert.All([page1, page2], p => Assert.Equal(6, p.TotalCount));
         Assert.Equal(2, page1.TotalPages);
         Assert.True(page1.HasNextPage);
         Assert.False(page1.HasPreviousPage);
@@ -100,7 +102,7 @@ public sealed class MovieCatalogTests : IDisposable
     {
         var result = await SearchAsync("batman", page: 1, pageSize: 10);
 
-        Assert.Equal(new[] { "Action" }, Assert.Single(result.Items).Genres);
+        Assert.Equal(["Action"], Assert.Single(result.Items).Genres);
     }
 
     [Fact]
@@ -115,6 +117,125 @@ public sealed class MovieCatalogTests : IDisposable
         Assert.Null(missing);
     }
 
+    [Theory]
+    [InlineData("Action", 3)]
+    [InlineData("action", 3)]            // case-insensitive
+    [InlineData("SCIENCE FICTION", 2)]   // multi-word genre
+    [InlineData(" Animation ", 2)]       // surrounding whitespace ignored
+    [InlineData("Western", 0)]           // unknown genre is simply no results
+    public async Task Genre_filter_returns_only_movies_in_that_genre(string genre, int expectedCount)
+    {
+        var result = await SearchAsync(new MovieSearchCriteria(null, 1, 10) { Genre = genre });
+
+        Assert.Equal(expectedCount, result.TotalCount);
+        Assert.All(result.Items, m => Assert.Contains(genre.Trim(), m.Genres, StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData("spider", "Action", 2)]
+    [InlineData("spider", "Animation", 0)]
+    [InlineData("man", "Action", 3)]     // both Spider-Man films and "The Batman"
+    [InlineData("the", "Animation", 1)]  // "Pokémon: The First Movie" only
+    public async Task Genre_filter_combines_with_title_search(string search, string genre, int expectedCount)
+    {
+        var result = await SearchAsync(new MovieSearchCriteria(search, 1, 10) { Genre = genre });
+
+        Assert.Equal(expectedCount, result.TotalCount);
+    }
+
+    [Fact]
+    public async Task Genre_filter_is_applied_before_paging()
+    {
+        var result = await SearchAsync(new MovieSearchCriteria(null, 1, 2) { Genre = "Action" });
+
+        Assert.Equal(2, result.Items.Count);
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.TotalPages);
+    }
+
+    [Fact]
+    public async Task Sorts_by_title_descending()
+    {
+        var result = await SearchAsync(new MovieSearchCriteria(null, 1, 10) { SortDirection = SortDirection.Descending });
+
+        Assert.Equal(
+            ["The Batman", "Spider-Man: No Way Home", "Spider-Man", "Shiny_Flakes: The Teenage Drug Lord", "Pokémon: The First Movie", "100% Wolf"],
+            result.Items.Select(m => m.Title));
+    }
+
+    [Theory]
+    [InlineData(SortDirection.Ascending)]
+    [InlineData(SortDirection.Descending)]
+    public async Task Sorts_by_release_date(SortDirection direction)
+    {
+        var result = await SearchAsync(new MovieSearchCriteria(null, 1, 10)
+        {
+            SortBy = MovieSortField.ReleaseDate,
+            SortDirection = direction,
+        });
+
+        var expected = new[]
+        {
+            "Pokémon: The First Movie",            // 1998-07-18
+            "Spider-Man",                          // 2002-05-01
+            "100% Wolf",                           // 2020-05-28
+            "Shiny_Flakes: The Teenage Drug Lord", // 2021-08-03
+            "Spider-Man: No Way Home",             // 2021-12-15
+            "The Batman",                          // 2022-03-01
+        };
+        if (direction == SortDirection.Descending)
+        {
+            Array.Reverse(expected);
+        }
+
+        Assert.Equal(expected, result.Items.Select(m => m.Title));
+    }
+
+    [Theory]
+    [InlineData(SortDirection.Ascending)]
+    [InlineData(SortDirection.Descending)]
+    public async Task Movies_released_on_the_same_date_are_ordered_by_title(SortDirection direction)
+    {
+        _dbContext.Movies.Add(CreateMovie("Another Film", new DateOnly(2022, 3, 1)));
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var result = await SearchAsync(new MovieSearchCriteria(null, 1, 10)
+        {
+            SortBy = MovieSortField.ReleaseDate,
+            SortDirection = direction,
+        });
+
+        var titles = result.Items.Select(m => m.Title).ToList();
+        Assert.Equal(titles.IndexOf("Another Film") + 1, titles.IndexOf("The Batman"));
+    }
+
+    [Fact]
+    public async Task Sorting_is_applied_before_paging()
+    {
+        var criteria = new MovieSearchCriteria(null, 1, 2) { SortBy = MovieSortField.ReleaseDate };
+
+        var page1 = await SearchAsync(criteria);
+        var page2 = await SearchAsync(criteria with { Page = 2 });
+
+        Assert.Equal(["Pokémon: The First Movie", "Spider-Man"], page1.Items.Select(m => m.Title));
+        Assert.Equal(["100% Wolf", "Shiny_Flakes: The Teenage Drug Lord"], page2.Items.Select(m => m.Title));
+    }
+
+    [Fact]
+    public async Task GetGenres_returns_every_genre_with_its_movie_count_ordered_by_name()
+    {
+        var genres = await _catalog.GetGenresAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            [
+                new GenreSummary("Action", 3),
+                new GenreSummary("Animation", 2),
+                new GenreSummary("Comedy", 1),
+                new GenreSummary("Science Fiction", 2),
+            ],
+            genres);
+    }
+
     public void Dispose()
     {
         _dbContext.Dispose();
@@ -122,13 +243,16 @@ public sealed class MovieCatalogTests : IDisposable
     }
 
     private Task<PagedResult<MovieSummary>> SearchAsync(string? search, int page, int pageSize) =>
-        _catalog.SearchAsync(new MovieSearchCriteria(search, page, pageSize), TestContext.Current.CancellationToken);
+        SearchAsync(new MovieSearchCriteria(search, page, pageSize));
+
+    private Task<PagedResult<MovieSummary>> SearchAsync(MovieSearchCriteria criteria) =>
+        _catalog.SearchAsync(criteria, TestContext.Current.CancellationToken);
 
     private static Movie CreateMovie(string title, DateOnly releaseDate, params Genre[] genres) => new()
     {
         Title = title,
         SearchTitle = TextNormalizer.Normalize(title),
         ReleaseDate = releaseDate,
-        Genres = genres.ToList(),
+        Genres = [.. genres],
     };
 }

@@ -24,7 +24,7 @@ public class MovieCsvReaderTests
         Assert.Equal(8940, row.VoteCount);
         Assert.Equal(8.3, row.VoteAverage);
         Assert.Equal("en", row.OriginalLanguage);
-        Assert.Equal(new[] { "Action", "Adventure", "Science Fiction" }, row.Genres);
+        Assert.Equal(["Action", "Adventure", "Science Fiction"], row.Genres);
         Assert.Equal("https://image.tmdb.org/a.jpg", row.PosterUrl);
     }
 
@@ -52,7 +52,7 @@ public class MovieCsvReaderTests
 
         var row = Assert.Single(result.Rows);
         Assert.Equal("https://image.tmdb.org/c.jpg", row.PosterUrl);
-        Assert.Equal(new[] { "Crime", "Mystery" }, row.Genres);
+        Assert.Equal(["Crime", "Mystery"], row.Genres);
     }
 
     [Fact]
