@@ -12,14 +12,12 @@ Built for the Optix technical test.
 | Limit the number of results | ✅ | `pageSize` (1–100, default 20) |
 | Page through the list | ✅ | `page` (1-based) with `totalCount`, `totalPages`, `hasNextPage`, `hasPreviousPage` |
 | Filter by genre | ✅ | `genre=Science Fiction` (exact name, case-insensitive). `GET /api/genres` lists the valid names |
-| Filter by actor | ❓ | The dataset has no cast data (see [Notes](#notes-on-the-dataset)) |
+| Filter by actor | ❓ | Not yet implemented. The dataset has no cast data (see [Notes](#notes-on-the-dataset)), so this was de-scoped in the interim to fit available development time |
 | Sort by title / release date | ✅ | `sortBy=title\|releaseDate`, `sortDirection=asc\|desc` |
 
 All the filters combine, and they're applied before paging, so `totalCount` and `totalPages` describe the filtered results.
 
-### Bonus endpoints
-
-These go beyond the brief's requirements:
+### Additional endpoints
 
 | Endpoint | Purpose |
 |---|---|
@@ -31,21 +29,21 @@ The OpenAPI document and the Scalar API explorer are also included.
 
 ## Running it
 
-### Docker (recommended)
-
-```bash
-docker compose up --build
-```
-
-Then open <http://localhost:8080>, which redirects to the Scalar API explorer.
-
-### .NET SDK
+### .NET SDK (tested method)
 
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```bash
 dotnet run --project src/Movies.Api
 ```
+
+### Docker (as yet untested by developer)
+
+```bash
+docker compose up --build
+```
+
+Then open <http://localhost:8080>, which redirects to the Scalar API explorer.
 
 The API explorer opens at <http://localhost:5080/scalar>. `src/Movies.Api/Movies.Api.http` has example requests for Visual Studio or VS Code.
 
