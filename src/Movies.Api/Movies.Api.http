@@ -27,5 +27,11 @@ GET {{baseUrl}}/api/movies/1
 ### Validation errors (pageSize out of range, unknown sort field)
 GET {{baseUrl}}/api/movies?pageSize=500&sortBy=rating
 
-### Health
+### Health: all checks
 GET {{baseUrl}}/health
+
+### Health: liveness (process up)
+GET {{baseUrl}}/health/live
+
+### Health: readiness (database populated)
+GET {{baseUrl}}/health/ready

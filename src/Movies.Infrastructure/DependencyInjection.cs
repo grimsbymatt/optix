@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Movies.Core.Search;
 using Movies.Infrastructure.Data;
+using Movies.Infrastructure.Health;
 using Movies.Infrastructure.Search;
 using Movies.Infrastructure.Seeding;
 
@@ -28,6 +29,12 @@ public static class DependencyInjection
 
         return services;
     }
+
+    /// <summary>
+    /// Adds a health check that confirms the movie database is reachable and populated.
+    /// </summary>
+    public static IHealthChecksBuilder AddMoviesDatabaseHealthCheck(this IHealthChecksBuilder builder, params string[] tags) =>
+        builder.AddCheck<MoviesDatabaseHealthCheck>(MoviesDatabaseHealthCheck.Name, tags: tags);
 
     /// <summary>
     /// Creates the schema and loads the CSV. Call once at start-up, before the app starts serving requests.

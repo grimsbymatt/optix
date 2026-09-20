@@ -183,6 +183,7 @@ public sealed class MovieCatalogTests : IDisposable
             "Spider-Man: No Way Home",             // 2021-12-15
             "The Batman",                          // 2022-03-01
         };
+
         if (direction == SortDirection.Descending)
         {
             Array.Reverse(expected);

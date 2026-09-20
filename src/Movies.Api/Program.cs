@@ -1,5 +1,6 @@
 using Movies.Api.Endpoints;
 using Movies.Api.Errors;
+using Movies.Api.Health;
 using Movies.Infrastructure;
 using Scalar.AspNetCore;
 
@@ -11,7 +12,7 @@ builder.Services.AddMoviesInfrastructure();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks().AddMoviesDatabaseHealthCheck(HealthEndpoints.ReadyTag);
 
 var app = builder.Build();
 
@@ -25,7 +26,7 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("OpenApi
     app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 }
 
-app.MapHealthChecks("/health");
+app.MapHealthEndpoints();
 app.MapMovieEndpoints();
 app.MapGenreEndpoints();
 
@@ -33,6 +34,3 @@ app.MapGenreEndpoints();
 await app.Services.InitializeMoviesDatabaseAsync();
 
 await app.RunAsync();
-
-// Exposes Program to WebApplicationFactory in the integration tests.
-public partial class Program;

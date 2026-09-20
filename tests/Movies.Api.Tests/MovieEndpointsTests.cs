@@ -153,14 +153,6 @@ public sealed class MovieEndpointsTests(MoviesApiFactory factory) : IClassFixtur
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Health_endpoint_reports_healthy()
-    {
-        var response = await _client.GetAsync("/health", CancellationToken);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-
     private async Task<PagedResult<MovieSummary>> GetPageAsync(string url)
     {
         var response = await _client.GetAsync(url, CancellationToken);

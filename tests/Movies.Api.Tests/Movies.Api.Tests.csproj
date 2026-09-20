@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestData\movies.csv" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestData\*.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

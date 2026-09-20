@@ -10,9 +10,12 @@ namespace Movies.Api.Tests;
 /// Hosts the real API in memory with its own uniquely named SQLite database
 /// (so test classes running in parallel don't share state) seeded from a small, known CSV.
 /// </summary>
-public sealed class MoviesApiFactory : WebApplicationFactory<Program>
+public class MoviesApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"movies-tests-{Guid.NewGuid():N}";
+
+    /// <summary>CSV file (in TestData) used to seed the database.</summary>
+    protected virtual string SeedFileName => "movies.csv";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -22,7 +25,7 @@ public sealed class MoviesApiFactory : WebApplicationFactory<Program>
             services.PostConfigure<MoviesDataOptions>(options =>
             {
                 options.ConnectionString = $"Data Source={_databaseName};Mode=Memory;Cache=Shared";
-                options.SeedCsvPath = Path.Combine(AppContext.BaseDirectory, "TestData", "movies.csv");
+                options.SeedCsvPath = Path.Combine(AppContext.BaseDirectory, "TestData", SeedFileName);
             }));
     }
 }

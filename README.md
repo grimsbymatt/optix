@@ -17,7 +17,17 @@ Built for the Optix technical test.
 
 All the filters combine, and they're applied before paging, so `totalCount` and `totalPages` describe the filtered results.
 
-Also included: `GET /api/movies/{id}`, `GET /api/genres`, `GET /health`, OpenAPI document and Scalar API explorer.
+### Bonus endpoints
+
+These go beyond the brief's requirements:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/movies/{id}` | Full details for one movie, including the overview, popularity, vote count and language. Search results carry the `id`. |
+| `GET /api/genres` | Every genre with its movie count, for discovering valid `genre` values. |
+| `GET /health`, `/health/live`, `/health/ready` | Health checks for monitoring and container orchestrators ([details](#health-checks)). |
+
+The OpenAPI document and the Scalar API explorer are also included.
 
 ## Running it
 
@@ -106,6 +116,36 @@ Every genre, ordered by name, with the number of movies in it. This lets a clien
   { "name": "Adventure", "movieCount": 1853 }
 ]
 ```
+
+### Health checks
+
+| Endpoint | Checks | Use for |
+|---|---|---|
+| `GET /health/live` | None. It only confirms the process is up. | Liveness probe (restart the container if this fails) |
+| `GET /health/ready` | The movie database can be queried and contains movies | Readiness probe (only route traffic once this passes) |
+| `GET /health` | All checks | People, dashboards, uptime monitors |
+
+Each returns `200` when healthy or `503` when unhealthy, with a JSON body. Exception details are deliberately left out of the body.
+
+```json
+{
+  "status": "Healthy",
+  "totalDurationMs": 1.52,
+  "checks": [
+    {
+      "name": "movies-database",
+      "status": "Healthy",
+      "description": "9827 movies loaded.",
+      "durationMs": 1.21,
+      "data": { "movieCount": 9827 }
+    }
+  ]
+}
+```
+
+The readiness check matters because the database is in memory. If the seed failed, or the keep-alive connection were lost, the
+process would still be running but unable to answer queries. Readiness reports that, while liveness keeps passing, so an
+orchestrator stops sending traffic instead of restarting a healthy process.
 
 ## Architecture
 
